@@ -1,0 +1,332 @@
+{
+	"info": {
+		"_postman_id": "bd85bd34-42dc-4b9d-8968-240826ec007b",
+		"name": "Prove Pre-Fill",
+		"description": "Prove Pre-Fill® (“Pre-Fill”) leverages the power of phones and phone numbers to modernize onboarding experiences by delivering authenticated digital identities and verified data to supercharge application velocity while mitigating identity fraud.\n\nThe Pre-Fill workflow utilizes all of Prove’s data sources to more accurately and quickly fill out the necessary information for your consumer to complete their application by using the phone number and another consumer identifier (date of birth or last 4 of SSN).\n\n## Features\n\nProve Pre-Fill Leverages Prove’s “PRO” model of identity verification:\n\n1. **P**ossession–Confirm possession of the phone with “something-you-have” authentication.\n    \n2. **R**eputation–Screen for risk to ensure the phone being used to authenticate is not compromised or used by a bad actor.\n    \n3. **O**wnership–Verifying the phone number associated with the rightful owner or true consumer.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19906887"
+	},
+	"item": [
+		{
+			"name": "Step 1 /getAuthUrl",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var redirect = pm.response.json().Response.AuthenticationUrl;\r",
+							"pm.environment.set(\"authentication_url\", redirect);\r",
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"RequestId\": \"{{$timestamp}}\",\r\n    \"MobileNumber\": \"{{phone_number}}\",\r\n    \"FinalTargetUrl\": \"https://google.com\",\r\n    \"SessionId\": \"SESSIONID-UNIQUE-TESTING\",\r\n    \"ApiClientId\": \"{{api_client_id}}\",\r\n    \"SubClientId\": \"{{api_sub_client_id}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prove_api}}fortified/2015/06/01/getAuthUrl",
+					"host": [
+						"{{prove_api}}fortified"
+					],
+					"path": [
+						"2015",
+						"06",
+						"01",
+						"getAuthUrl"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "User Clicks Link /continueAuth",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var redirect = pm.response.text();\r",
+							"pm.environment.set('long_vfp', redirect.split('vfp%3D')[1].split('&ec')[0])\r",
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{authentication_url}}",
+					"host": [
+						"{{authentication_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 2 /instantLinkResult",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"RequestId\": \"{{$timestamp}}\",\r\n    \"ApiClientId\": \"{{api_client_id}}\",\r\n    \"SubClientId\": \"{{api_sub_client_id}}\",\r\n    \"VerificationFingerprint\":\"{{long_vfp}}\",\r\n    \"phoneNumber\": \"{{phone_number}}\"\r\n\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prove_api}}fortified/2015/06/01/instantLinkResult",
+					"host": [
+						"{{prove_api}}fortified"
+					],
+					"path": [
+						"2015",
+						"06",
+						"01",
+						"instantLinkResult"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 3 /token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"pm.environment.set(\"oauth_token\", \"Bearer \" + jsonData.access_token);\r",
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{password}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{prove_api}}token",
+					"host": [
+						"{{prove_api}}token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 4 /trust",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{oauth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"requestId\"     : \"{{$randomUUID}}\",\r\n  \"phoneNumber\"   : \"{{phone_number}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prove_api}}trust/v2",
+					"host": [
+						"{{prove_api}}trust"
+					],
+					"path": [
+						"v2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 5 /identity",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{oauth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phoneNumber\": \"{{phone_number}}\",\r\n    \"requestId\": \"{{$randomUUID}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prove_api}}identity/v2",
+					"host": [
+						"{{prove_api}}identity"
+					],
+					"path": [
+						"v2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 6 /verify",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful request\", () => pm.expect(pm.response.code).to.be.oneOf([200]));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{oauth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"requestId\" : \"{{$randomUUID}}\",\r\n  \"phoneNumber\" : \"{{phone_number}}\",\r\n  \"firstName\" : \"James\",\r\n  \"lastName\" : \"Weedall\",\r\n  \"address\" : \"39 South Trail\",\r\n  \"extendedAddress\" : \"\",\r\n  \"city\" : \"San Antonio\",\r\n  \"region\" : \"TX\",\r\n  \"postalCode\" : \"78285\",\r\n  \"dob\" : \"\",\r\n  \"ssn\" : \"\",\r\n  \"last4\" : \"\",\r\n  \"lastVerified\" : \"\",\r\n  \"phoneUpdate\" : \"\",\r\n  \"emailAddress\" : \"\",\r\n  \"details\": true\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prove_api}}identity/verify/v2",
+					"host": [
+						"{{prove_api}}identity"
+					],
+					"path": [
+						"verify",
+						"v2"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "authentication_url",
+			"value": ""
+		}
+	]
+}
